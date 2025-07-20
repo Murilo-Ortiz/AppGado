@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Appbar, Button, Paragraph, Title } from 'react-native-paper';
@@ -14,44 +14,36 @@ export default function AnimalDetailScreen() {
   useEffect(() => {
     if (!id || !auth.currentUser) return;
 
-    const fetchAnimalData = async () => {
-      try {
-        const animalDocRef = doc(db, 'users', auth.currentUser.uid, 'animals', id);
-        const docSnap = await getDoc(animalDocRef);
-
-        if (docSnap.exists()) {
-          setAnimal({ ...docSnap.data(), id: docSnap.id });
-        } else {
-          Alert.alert("Erro", "Animal não encontrado.");
-          router.back();
-        }
-      } catch (error) {
-        console.error("Erro ao buscar detalhes do animal:", error);
-        Alert.alert("Erro", "Não foi possível carregar os dados.");
-      } finally {
-        setLoading(false);
+    const animalDocRef = doc(db, 'users', auth.currentUser.uid, 'animals', id);
+    
+    const unsubscribe = onSnapshot(animalDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setAnimal({ ...docSnap.data(), id: docSnap.id });
+      } else {
+        Alert.alert("Erro", "Animal não encontrado.");
+        router.back();
       }
-    };
+      setLoading(false);
+    }, (error) => {
+      console.error("Erro ao buscar detalhes do animal:", error);
+      Alert.alert("Erro", "Não foi possível carregar os dados.");
+      setLoading(false);
+    });
 
-    fetchAnimalData();
+    return () => unsubscribe(); 
   }, [id]);
 
   const handleDelete = () => {
     Alert.alert(
       "Confirmar Exclusão",
-      `Tem certeza que deseja excluir "${animal.nome}"? Esta ação não pode ser desfeita.`,
+      `Tem certeza que deseja excluir "${animal.nome}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         { text: "Excluir", style: "destructive", onPress: async () => {
-          try {
-            const animalDocRef = doc(db, 'users', auth.currentUser.uid, 'animals', id);
-            await deleteDoc(animalDocRef);
-            Alert.alert("Sucesso", "Animal excluído do rebanho.");
-            router.back();
-          } catch (error) {
-            console.error("Erro ao excluir animal:", error);
-            Alert.alert("Erro", "Não foi possível excluir o animal.");
-          }
+          const animalDocRef = doc(db, 'users', auth.currentUser.uid, 'animals', id);
+          await deleteDoc(animalDocRef);
+          Alert.alert("Sucesso", "Animal excluído.");
+          router.back();
         }}
       ]
     );
@@ -61,9 +53,7 @@ export default function AnimalDetailScreen() {
     return <ActivityIndicator animating={true} size="large" style={styles.loading} />;
   }
 
-  if (!animal) {
-    return null; 
-  }
+  if (!animal) return null;
 
   return (
     <View style={styles.container}>
@@ -76,12 +66,10 @@ export default function AnimalDetailScreen() {
         <Paragraph style={styles.paragraph}>Nome: {animal.nome}</Paragraph>
         <Paragraph style={styles.paragraph}>Tipo: {animal.tipo}</Paragraph>
         
-        {/* Aqui adicionaremos mais detalhes no futuro */}
-
         <Button 
           icon="pencil" 
           mode="contained" 
-          onPress={() => { /* Lógica de edição virá aqui */ }} 
+          onPress={() => router.push(`/animal/edit/${id}`)} 
           style={styles.button}
         >
           Editar
