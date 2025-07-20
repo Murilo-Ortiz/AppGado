@@ -1,17 +1,15 @@
 import { useRouter } from 'expo-router';
+import { addDoc, collection } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, RadioButton, Text, TextInput } from 'react-native-paper';
-// Importe o 'db' e 'auth' do seu arquivo de configuração
 import { auth, db } from '../firebaseConfig';
-// Importe as funções do Firestore para adicionar documentos
-import { addDoc, collection } from 'firebase/firestore';
 
 export default function AddAnimalScreen() {
   const router = useRouter();
   const [brinco, setBrinco] = useState('');
   const [nome, setNome] = useState('');
-  const [tipo, setTipo] = useState('Vaca'); // 'Vaca' ou 'Bezerro'
+  const [tipo, setTipo] = useState('Vaca'); 
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSaveAnimal = async () => {
@@ -19,7 +17,6 @@ export default function AddAnimalScreen() {
       Alert.alert("Erro", "Por favor, preencha o Brinco e o Nome.");
       return;
     }
-    // Garante que temos um usuário logado antes de salvar
     if (!auth.currentUser) {
       Alert.alert("Erro de Autenticação", "Você não está logado.");
       return;
@@ -28,20 +25,18 @@ export default function AddAnimalScreen() {
     setIsLoading(true);
 
     try {
-      // Cria uma referência para a subcoleção 'animals' dentro do documento do usuário atual.
-      // Isso garante que cada usuário só veja seus próprios animais.
       const userAnimalsCollection = collection(db, 'users', auth.currentUser.uid, 'animals');
       
       await addDoc(userAnimalsCollection, {
         brinco: brinco,
         nome: nome,
         tipo: tipo,
-        createdAt: new Date(), // Guarda a data de criação
+        createdAt: new Date(), 
       });
 
       setIsLoading(false);
       Alert.alert("Sucesso", "Animal salvo no seu rebanho!");
-      router.back(); // Volta para a tela principal
+      router.back(); 
     } catch (error) {
       console.error("Erro ao salvar o animal: ", error);
       setIsLoading(false);
