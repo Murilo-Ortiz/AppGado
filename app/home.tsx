@@ -1,16 +1,18 @@
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { collection, onSnapshot, query } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { ActivityIndicator, Appbar, Card, FAB, Paragraph, Title } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Card, FAB, Paragraph, Searchbar, Title } from 'react-native-paper';
 import { auth, db } from '../firebaseConfig';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [animals, setAnimals] = useState([]);
+  const [allAnimals, setAllAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // Busca os dados do Firestore em tempo real
   useEffect(() => {
     if (!auth.currentUser) {
       setLoading(false);
@@ -25,7 +27,7 @@ export default function HomeScreen() {
       querySnapshot.forEach((doc) => {
         animalsData.push({ ...doc.data(), id: doc.id });
       });
-      setAnimals(animalsData);
+      setAllAnimals(animalsData);
       setLoading(false);
     }, (error) => {
       console.error("Erro ao buscar animais: ", error);
@@ -36,6 +38,20 @@ export default function HomeScreen() {
     return () => unsubscribe();
   }, []);
 
+  // Filtra os animais com base na busca.
+  // useMemo garante que o filtro só rode quando a lista ou a busca mudarem.
+  const filteredAnimals = useMemo(() => {
+    if (!searchQuery) {
+      return allAnimals;
+    }
+    return allAnimals.filter(animal => {
+      const queryLower = searchQuery.toLowerCase();
+      const nomeLower = animal.nome?.toLowerCase() || '';
+      const brincoLower = animal.brinco?.toLowerCase() || '';
+      return nomeLower.includes(queryLower) || brincoLower.includes(queryLower);
+    });
+  }, [allAnimals, searchQuery]);
+
   const handleLogout = () => {
     signOut(auth)
       .then(() => router.replace('/'))
@@ -43,10 +59,6 @@ export default function HomeScreen() {
         console.error("Erro ao fazer logout: ", error);
         Alert.alert("Erro", "Não foi possível sair.");
       });
-  };
-
-  const handleAddAnimal = () => {
-    router.push('/add-animal');
   };
 
   const renderAnimal = ({ item }) => (
@@ -75,14 +87,25 @@ export default function HomeScreen() {
         <Appbar.Action icon="logout" onPress={handleLogout} />
       </Appbar.Header>
 
-      {animals.length === 0 ? (
+      {/* Barra de Busca */}
+      <Searchbar
+        placeholder="Buscar por nome ou brinco"
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        style={styles.searchbar}
+      />
+
+      {filteredAnimals.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Nenhum animal cadastrado.</Text>
-          <Text style={styles.emptySubText}>Clique no + para começar.</Text>
+          <Text style={styles.emptyText}>Nenhum animal encontrado.</Text>
+          {searchQuery ? 
+            <Text style={styles.emptySubText}>Tente uma busca diferente.</Text> :
+            <Text style={styles.emptySubText}>Clique no + para começar.</Text>
+          }
         </View>
       ) : (
         <FlatList
-          data={animals}
+          data={filteredAnimals}
           renderItem={renderAnimal}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
@@ -92,7 +115,7 @@ export default function HomeScreen() {
       <FAB
         style={styles.fab}
         icon="plus"
-        onPress={handleAddAnimal}
+        onPress={() => router.push('/add-animal')}
       />
     </View>
   );
@@ -100,11 +123,15 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7fafc' },
+  searchbar: {
+    margin: 16,
+    marginBottom: 0,
+  },
   list: { padding: 16 },
   card: { marginBottom: 16 },
   fab: { position: 'absolute', margin: 16, right: 0, bottom: 0, backgroundColor: '#667eea' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f7fafc' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 18, color: '#718096' },
-  emptySubText: { fontSize: 14, color: '#a0aec0', marginTop: 8 }
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  emptyText: { fontSize: 18, color: '#718096', textAlign: 'center' },
+  emptySubText: { fontSize: 14, color: '#a0aec0', marginTop: 8, textAlign: 'center' }
 });
