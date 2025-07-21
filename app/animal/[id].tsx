@@ -6,7 +6,7 @@ import { ActivityIndicator, Appbar, Button, Card, Divider, List, Paragraph, Titl
 import { auth, db } from '../../firebaseConfig';
 
 const DetailRow = ({ label, value }) => (
-  value ? <Paragraph style={styles.paragraph}><Paragraph style={styles.label}>{label}:</Paragraph> {value}</Paragraph> : null
+  value || value === 0 ? <Paragraph style={styles.paragraph}><Paragraph style={styles.label}>{label}:</Paragraph> {value}</Paragraph> : null
 );
 
 export default function AnimalDetailScreen() {
@@ -60,7 +60,9 @@ export default function AnimalDetailScreen() {
             
             {animal.tipo === 'Vaca' && (
               <>
-                <Title style={styles.sectionTitle}>Dados Reprodutivos</Title>
+                <Title style={styles.sectionTitle}>Dados Reprodutivos e de Produção</Title>
+                <DetailRow label="Nº de Partos" value={animal.numPartos} />
+                <DetailRow label="Rendimento" value={animal.rendimentoProducao} />
                 <DetailRow label="Touro" value={animal.touro} />
                 <DetailRow label="Inseminação" value={animal.dataInseminacao} />
                 <DetailRow label="Parição Esperada" value={animal.dataParicaoEsperada} />
@@ -73,10 +75,63 @@ export default function AnimalDetailScreen() {
                 <Title style={styles.sectionTitle}>Dados de Desenvolvimento</Title>
                 <DetailRow label="Peso ao Nascer" value={animal.pesoNascimento ? `${animal.pesoNascimento} kg` : ''} />
                 <DetailRow label="Desmame" value={animal.dataDesmame} />
+                {animal.sexo === 'Fêmea' && (
+                  <>
+                    <DetailRow label="1º Cio" value={animal.dataPrimeiroCio} />
+                    <DetailRow label="1ª Inseminação" value={animal.dataInseminacaoBezerra} />
+                  </>
+                )}
               </>
             )}
           </Card.Content>
         </Card>
+
+        {/* Seção de Histórico de Doenças */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <Title style={styles.sectionTitle}>Histórico de Doenças</Title>
+            {animal.historicoDoencas && animal.historicoDoencas.length > 0 ? (
+              animal.historicoDoencas.map((doenca) => (
+                <List.Item
+                  key={doenca.id}
+                  title={doenca.nome}
+                  description={`Data: ${doenca.data}\nTratamento: ${doenca.tratamento || 'N/A'}`}
+                  descriptionNumberOfLines={4}
+                  left={props => <List.Icon {...props} icon="medical-bag" />}
+                />
+              ))
+            ) : (
+              <Paragraph>Nenhuma doença registrada.</Paragraph>
+            )}
+            <Button icon="plus" mode="contained-tonal" onPress={() => router.push(`/animal/add-disease/${id}`)} style={styles.addButton}>
+              Adicionar Doença
+            </Button>
+          </Card.Content>
+        </Card>
+
+        {/* Seção de Pesos Mensais (Apenas para Bezerros) */}
+        {animal.tipo === 'Bezerro' && (
+          <Card style={styles.card}>
+            <Card.Content>
+              <Title style={styles.sectionTitle}>Histórico de Pesagem</Title>
+              {animal.pesosMensais && animal.pesosMensais.length > 0 ? (
+                animal.pesosMensais.map((peso) => (
+                  <List.Item
+                    key={peso.id}
+                    title={`${peso.peso} kg`}
+                    description={`Data: ${peso.data}`}
+                    left={props => <List.Icon {...props} icon="scale-balance" />}
+                  />
+                ))
+              ) : (
+                <Paragraph>Nenhum peso registrado.</Paragraph>
+              )}
+              <Button icon="plus" mode="contained-tonal" onPress={() => router.push(`/animal/add-weight/${id}`)} style={styles.addButton}>
+                Adicionar Pesagem
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
 
         {/* Seção de Vacinas */}
         <Card style={styles.card}>
@@ -139,7 +194,7 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   card: { backgroundColor: 'white', borderRadius: 8, elevation: 2, marginBottom: 16 },
   cardTitle: { fontSize: 22, color: '#1a202c', marginBottom: 12 },
-  sectionTitle: { fontSize: 18, marginBottom: 10, color: '#4a5568' },
+  sectionTitle: { fontSize: 18, marginTop: 20, marginBottom: 10, color: '#4a5568' },
   paragraph: { fontSize: 16, marginBottom: 8, lineHeight: 24 },
   label: { fontWeight: 'bold', color: '#2d3748' },
   divider: { marginVertical: 12 },
