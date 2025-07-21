@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { Auth, getAuth } from "firebase/auth";
-import { Firestore, getFirestore } from "firebase/firestore";
+import { enableIndexedDbPersistence, Firestore, getFirestore } from "firebase/firestore";
 
 
 // Your web app's Firebase configuration
@@ -21,6 +21,18 @@ if (!getApps().length) {
 } else {
   app = getApp();
 }
+
+const db: Firestore = getFirestore(app);
+enableIndexedDbPersistence(db)
+  .catch((err) => {
+    if (err.code == 'failed-precondition') {
+      // Isso pode acontecer se o usuário tiver o app aberto em múltiplas abas do navegador.
+      console.warn("Firestore: Persistência falhou, múltiplas abas abertas.");
+    } else if (err.code == 'unimplemented') {
+      // O navegador não suporta a funcionalidade. No Expo Go, isso não deve ser um problema.
+      console.warn("Firestore: Persistência não suportada neste navegador.");
+    }
+  });
 
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
