@@ -1,10 +1,12 @@
 import { Stack } from 'expo-router';
 import React from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
+import { theme } from '../constants/theme';
 
 export default function RootLayout() {
   return (
-    <PaperProvider>
+    <PaperProvider theme={theme}>
       <Stack
         screenOptions={{
           headerShown: false, 

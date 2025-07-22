@@ -2,15 +2,17 @@ import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { Button, Paragraph, TextInput, Title } from 'react-native-paper';
+import { Button, Paragraph, TextInput, Title, useTheme } from 'react-native-paper';
 import Toast from 'react-native-toast-message'; // Importe o Toast
 import { auth } from '../firebaseConfig';
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const theme = useTheme();
 
   const showToast = (type, text1, text2) => {
     Toast.show({
@@ -61,16 +63,16 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, {backgroundColor: theme.colors.background}]}
     >
-      <View style={styles.innerContainer}>
+      <View style={[styles.innerContainer,{backgroundColor: theme.colors.surface}]}>
         <Image 
-          source={{ uri: 'https://placehold.co/150x150/667eea/ffffff?text=AppGado' }}
+          source={{ uri: 'https://placehold.co/150x150/2d6a4f/ffffff?text=AppGado' }}
           style={styles.logo}
           resizeMode="contain"
         />
-        <Title style={styles.title}>Bem-vindo!</Title>
-        <Paragraph style={styles.paragraph}>Acesse ou crie sua conta para gerenciar seu rebanho.</Paragraph>
+        <Title style={[styles.title,{color:theme.colors.text}]}>Bem-vindo!</Title>
+        <Paragraph style={[styles.paragraph, { color: theme.colors.placeholder }]}>Acesse ou crie sua conta para gerenciar seu rebanho.</Paragraph>
 
         <TextInput
           label="Email"
