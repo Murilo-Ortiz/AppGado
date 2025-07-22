@@ -1,64 +1,61 @@
 import { useRouter } from 'expo-router';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Paragraph, TextInput, Title } from 'react-native-paper';
-
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword
-} from "firebase/auth";
-
+import Toast from 'react-native-toast-message'; // Importe o Toast
 import { auth } from '../firebaseConfig';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  const showToast = (type, text1, text2) => {
+    Toast.show({
+      type: type, // 'success', 'error', 'info'
+      text1: text1,
+      text2: text2,
+      position: 'bottom',
+    });
+  };
 
   const handleLogin = () => {
     if (email === '' || password === '') {
-      Alert.alert("Erro", "Por favor, preencha e-mail e senha.");
+      showToast('error', 'Erro', 'Por favor, preencha e-mail e senha.');
       return;
     }
     setIsLoading(true);
     signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        console.log('Usuário logado:', userCredential.user.email);
+      .then(() => {
         router.replace('/home');
       })
-      .catch((error) => {
-        console.error(error);
-        Alert.alert("Erro de Login", "E-mail ou senha inválidos.");
+      .catch(() => {
+        showToast('error', 'Erro de Login', 'E-mail ou senha inválidos.');
       })
-      .finally(() => {
-        setIsLoading(false);
-      });
+      .finally(() => setIsLoading(false));
   };
 
   const handleSignUp = () => {
     if (email === '' || password === '') {
-      Alert.alert("Erro", "Por favor, preencha e-mail e senha para se cadastrar.");
+      showToast('error', 'Erro', 'Preencha e-mail e senha para se cadastrar.');
       return;
     }
     setIsLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        console.log('Usuário criado:', userCredential.user.email);
-        Alert.alert("Sucesso!", "Sua conta foi criada. Você será logado automaticamente.");
+      .then(() => {
+        showToast('success', 'Sucesso!', 'Sua conta foi criada.');
         router.replace('/home');
       })
       .catch((error) => {
-        console.error(error);
         if (error.code === 'auth/email-already-in-use') {
-          Alert.alert("Erro de Cadastro", "Este e-mail já está em uso.");
+          showToast('error', 'Erro de Cadastro', 'Este e-mail já está em uso.');
         } else {
-          Alert.alert("Erro de Cadastro", "Não foi possível criar a conta.");
+          showToast('error', 'Erro de Cadastro', 'Não foi possível criar a conta.');
         }
       })
-      .finally(() => {
-        setIsLoading(false);
-      });
+      .finally(() => setIsLoading(false));
   };
 
   return (
@@ -120,7 +117,6 @@ export default function LoginScreen() {
   );
 }
 
-// --- ESTILOS (mantidos os mesmos) ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,

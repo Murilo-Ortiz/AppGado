@@ -19,6 +19,7 @@ export default function RootLayout() {
         <Stack.Screen name="animal/add-weight/[id]"/>
         <Stack.Screen name="animal/add-disease/[id]"/>
       </Stack>
+      <Toast />
     </PaperProvider>
   );
 }

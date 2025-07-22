@@ -3,6 +3,7 @@ import { deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Appbar, Button, Card, Divider, List, Paragraph, Title } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 import { auth, db } from '../../firebaseConfig';
 
 const DetailRow = ({ label, value }) => (
@@ -15,6 +16,10 @@ export default function AnimalDetailScreen() {
   const [animal, setAnimal] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const showToast = (type, text1, text2 = '') => {
+    Toast.show({ type, text1, text2, position: 'bottom' });
+  };
+
   useEffect(() => {
     if (!id || !auth.currentUser) return;
     const animalDocRef = doc(db, 'users', auth.currentUser.uid, 'animals', id);
@@ -23,17 +28,31 @@ export default function AnimalDetailScreen() {
         setAnimal({ ...docSnap.data(), id: docSnap.id });
       }
       setLoading(false);
+    }, (error) => {
+      console.error("Erro ao buscar detalhes:", error);
+      showToast('error', 'Erro', 'Não foi possível carregar os dados.');
+      setLoading(false);
     });
     return () => unsubscribe();
   }, [id]);
 
   const handleDelete = () => {
     Alert.alert("Confirmar Exclusão", `Excluir "${animal.nome}"?`, [
-      { text: "Cancelar" },
-      { text: "Excluir", style: "destructive", onPress: async () => {
-        await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'animals', id));
-        router.back();
-      }}
+      { text: "Cancelar", style: 'cancel' },
+      { 
+        text: "Excluir", 
+        style: "destructive", 
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'animals', id));
+            showToast('success', 'Sucesso', 'Animal excluído do rebanho.');
+            router.back();
+          } catch (error) {
+            console.error("Erro ao excluir:", error);
+            showToast('error', 'Erro', 'Não foi possível excluir o animal.');
+          }
+        }
+      }
     ]);
   };
 

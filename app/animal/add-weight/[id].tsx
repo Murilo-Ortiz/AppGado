@@ -1,42 +1,50 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, TextInput, Title } from 'react-native-paper';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Appbar, Button, TextInput, Title, TouchableRipple } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 import { auth, db } from '../../../firebaseConfig';
+
+const DateInput = ({ label, value, onShowPicker }) => (
+  <TouchableRipple onPress={onShowPicker}>
+    <View>
+      <TextInput label={label} value={value} style={styles.input} mode="outlined" editable={false} right={<TextInput.Icon icon="calendar" />} />
+    </View>
+  </TouchableRipple>
+);
 
 export default function AddWeightScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); // ID do animal
+  const { id } = useLocalSearchParams();
   const [isSaving, setIsSaving] = useState(false);
-
-  // Estados para os campos
   const [peso, setPeso] = useState('');
   const [dataPesagem, setDataPesagem] = useState('');
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+
+  const showToast = (type, text1, text2 = '') => {
+        Toast.show({ type, text1, text2, position: 'bottom' });
+      };
 
   const handleSave = async () => {
     if (!peso || !dataPesagem) {
-      Alert.alert("Erro", "O peso e a data são obrigatórios.");
+      showToast('error',"Erro", "O peso e a data são obrigatórios.");
       return;
     }
     setIsSaving(true);
-
     const newWeightRecord = {
-      id: new Date().getTime().toString(), // ID único
+      id: new Date().getTime().toString(),
       peso: peso,
       data: dataPesagem,
     };
-
     try {
       const animalDocRef = doc(db, 'users', auth.currentUser.uid, 'animals', id);
-      await updateDoc(animalDocRef, {
-        pesosMensais: arrayUnion(newWeightRecord)
-      });
-      Alert.alert("Sucesso", "Peso registrado!");
+      await updateDoc(animalDocRef, { pesosMensais: arrayUnion(newWeightRecord) });
+      showToast('success',"Sucesso", "Peso registrado!");
       router.back();
     } catch (error) {
-      console.error("Erro ao salvar peso:", error);
-      Alert.alert("Erro", "Não foi possível registrar o peso.");
+      showToast('error',"Erro", "Não foi possível registrar o peso.");
     } finally {
       setIsSaving(false);
     }
@@ -51,11 +59,22 @@ export default function AddWeightScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Title style={styles.title}>Dados da Pesagem</Title>
         <TextInput label="Peso (kg)" value={peso} onChangeText={setPeso} style={styles.input} mode="outlined" keyboardType="numeric" />
-        <TextInput label="Data da Pesagem (DD/MM/AAAA)" value={dataPesagem} onChangeText={setDataPesagem} style={styles.input} mode="outlined" />
+        <DateInput label="Data da Pesagem" value={dataPesagem} onShowPicker={() => setDatePickerVisibility(true)} />
 
         <Button mode="contained" onPress={handleSave} style={styles.button} loading={isSaving} disabled={isSaving}>
           Salvar Registro
         </Button>
+
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={(date) => {
+            setDataPesagem(date.toLocaleDateString('pt-BR'));
+            setDatePickerVisibility(false);
+          }}
+          onCancel={() => setDatePickerVisibility(false)}
+          locale="pt_BR"
+        />
       </ScrollView>
     </View>
   );

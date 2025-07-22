@@ -1,43 +1,87 @@
 import { useRouter } from 'expo-router';
 import { addDoc, collection } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Appbar, Button, RadioButton, TextInput, Title } from 'react-native-paper';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Appbar, Button, RadioButton, TextInput, Title, TouchableRipple } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 import { auth, db } from '../firebaseConfig';
+
+const DateInput = ({ label, value, onShowPicker }) => (
+  <TouchableRipple onPress={onShowPicker}>
+    <View>
+      <TextInput
+        label={label}
+        value={value}
+        style={styles.input}
+        mode="outlined"
+        editable={false}
+        right={<TextInput.Icon icon="calendar" />}
+      />
+    </View>
+  </TouchableRipple>
+);
 
 export default function AddAnimalScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Estados para os campos
   const [brinco, setBrinco] = useState('');
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('Vaca');
   const [raca, setRaca] = useState('');
   const [sexo, setSexo] = useState('Fêmea');
+  const [numPartos, setNumPartos] = useState('');
+  const [rendimentoProducao, setRendimentoProducao] = useState('');
+  const [touro, setTouro] = useState('');
+  const [pesoNascimento, setPesoNascimento] = useState('');
+  const [datePickerTarget, setDatePickerTarget] = useState(null);
   const [dataNascimento, setDataNascimento] = useState('');
-
-  // Campos de Vaca
   const [dataInseminacao, setDataInseminacao] = useState('');
   const [dataParicaoEsperada, setDataParicaoEsperada] = useState('');
   const [dataSecagem, setDataSecagem] = useState('');
-  const [touro, setTouro] = useState('');
-  const [numPartos, setNumPartos] = useState('');
-  const [rendimentoProducao, setRendimentoProducao] = useState('');
-
-  // Campos de Bezerro/Bezerra
-  const [pesoNascimento, setPesoNascimento] = useState('');
   const [dataDesmame, setDataDesmame] = useState('');
   const [dataPrimeiroCio, setDataPrimeiroCio] = useState('');
   const [dataInseminacaoBezerra, setDataInseminacaoBezerra] = useState('');
 
+  const showToast = (type, text1, text2 = '') => {
+    Toast.show({ type, text1, text2, position: 'bottom' });
+  };
+
+  const showDatePicker = (target) => {
+    setDatePickerTarget(target);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerTarget(null);
+  };
+
+  const handleConfirmDate = (date) => {
+    const formattedDate = date.toLocaleDateString('pt-BR');
+    const dateSetters = {
+      nascimento: setDataNascimento,
+      inseminacao: setDataInseminacao,
+      paricao: setDataParicaoEsperada,
+      secagem: setDataSecagem,
+      desmame: setDataDesmame,
+      cio: setDataPrimeiroCio,
+      inseminacaoBezerra: setDataInseminacaoBezerra,
+    };
+
+    if (dateSetters[datePickerTarget]) {
+      dateSetters[datePickerTarget](formattedDate);
+    }
+    
+    hideDatePicker();
+  };
+
   const handleSaveAnimal = async () => {
     if (!brinco || !nome) {
-      Alert.alert("Erro", "Por favor, preencha pelo menos o Brinco e o Nome.");
+      showToast('error','Erro', 'Por favor, preencha pelo menos o Brinco e o Nome.');
       return;
     }
     if (!auth.currentUser) {
-      Alert.alert("Erro de Autenticação", "Você não está logado.");
+      showToast('error',"Erro de Autenticação", "Você não está logado.");
       return;
     }
 
@@ -52,7 +96,7 @@ export default function AddAnimalScreen() {
       animalData = {
         ...animalData,
         dataInseminacao, dataParicaoEsperada, dataSecagem, touro,
-        numPartos: Number(numPartos) || 0, // Converte para número
+        numPartos: Number(numPartos) || 0,
         rendimentoProducao,
       };
     } else { // Bezerro
@@ -66,10 +110,11 @@ export default function AddAnimalScreen() {
     try {
       const userAnimalsCollection = collection(db, 'users', auth.currentUser.uid, 'animals');
       await addDoc(userAnimalsCollection, animalData);
-      Alert.alert("Sucesso", "Animal salvo no seu rebanho!");
+      showToast('success',"Sucesso", "Animal salvo no seu rebanho!");
       router.back();
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível salvar o animal.");
+      showToast('error',"Erro", "Não foi possível salvar o animal.");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +138,7 @@ export default function AddAnimalScreen() {
         <TextInput label="Nº do Brinco" value={brinco} onChangeText={setBrinco} style={styles.input} mode="outlined" />
         <TextInput label="Nome do Animal" value={nome} onChangeText={setNome} style={styles.input} mode="outlined" />
         <TextInput label="Raça" value={raca} onChangeText={setRaca} style={styles.input} mode="outlined" />
-        <TextInput label="Data de Nascimento (DD/MM/AAAA)" value={dataNascimento} onChangeText={setDataNascimento} style={styles.input} mode="outlined" />
+        <DateInput label="Data de Nascimento" value={dataNascimento} onShowPicker={() => showDatePicker('nascimento')} />
         <Text style={styles.radioLabel}>Sexo:</Text>
         <RadioButton.Group onValueChange={setSexo} value={sexo}>
             <View style={styles.radioItem}><RadioButton value="Fêmea" /><Text>Fêmea</Text></View>
@@ -105,9 +150,9 @@ export default function AddAnimalScreen() {
             <Title style={styles.title}>Dados de Vaca</Title>
             <TextInput label="Nº de Partos" value={numPartos} onChangeText={setNumPartos} style={styles.input} mode="outlined" keyboardType="numeric" />
             <TextInput label="Rendimento da Produção" value={rendimentoProducao} onChangeText={setRendimentoProducao} style={styles.input} mode="outlined" multiline />
-            <TextInput label="Data de Inseminação (DD/MM/AAAA)" value={dataInseminacao} onChangeText={setDataInseminacao} style={styles.input} mode="outlined" />
-            <TextInput label="Data de Parição Esperada (DD/MM/AAAA)" value={dataParicaoEsperada} onChangeText={setDataParicaoEsperada} style={styles.input} mode="outlined" />
-            <TextInput label="Data de Secagem (DD/MM/AAAA)" value={dataSecagem} onChangeText={setDataSecagem} style={styles.input} mode="outlined" />
+            <DateInput label="Data de Inseminação" value={dataInseminacao} onShowPicker={() => showDatePicker('inseminacao')} />
+            <DateInput label="Data de Parição Esperada" value={dataParicaoEsperada} onShowPicker={() => showDatePicker('paricao')} />
+            <DateInput label="Data de Secagem" value={dataSecagem} onShowPicker={() => showDatePicker('secagem')} />
             <TextInput label="Touro (Pai)" value={touro} onChangeText={setTouro} style={styles.input} mode="outlined" />
           </>
         )}
@@ -116,11 +161,11 @@ export default function AddAnimalScreen() {
           <>
             <Title style={styles.title}>Dados de Bezerro/Bezerra</Title>
             <TextInput label="Peso ao Nascer (kg)" value={pesoNascimento} onChangeText={setPesoNascimento} style={styles.input} mode="outlined" keyboardType="numeric" />
-            <TextInput label="Data de Desmame (DD/MM/AAAA)" value={dataDesmame} onChangeText={setDataDesmame} style={styles.input} mode="outlined" />
+            <DateInput label="Data de Desmame" value={dataDesmame} onShowPicker={() => showDatePicker('desmame')} />
             {sexo === 'Fêmea' && (
               <>
-                <TextInput label="Data do 1º Cio (DD/MM/AAAA)" value={dataPrimeiroCio} onChangeText={setDataPrimeiroCio} style={styles.input} mode="outlined" />
-                <TextInput label="Data da 1ª Inseminação (DD/MM/AAAA)" value={dataInseminacaoBezerra} onChangeText={setDataInseminacaoBezerra} style={styles.input} mode="outlined" />
+                <DateInput label="Data do 1º Cio" value={dataPrimeiroCio} onShowPicker={() => showDatePicker('cio')} />
+                <DateInput label="Data da 1ª Inseminação" value={dataInseminacaoBezerra} onShowPicker={() => showDatePicker('inseminacaoBezerra')} />
               </>
             )}
           </>
@@ -129,6 +174,17 @@ export default function AddAnimalScreen() {
         <Button mode="contained" onPress={handleSaveAnimal} style={styles.button} loading={isLoading} disabled={isLoading}>
           Salvar Animal
         </Button>
+
+        <DateTimePickerModal
+            isVisible={!!datePickerTarget}
+            mode="date"
+            onConfirm={handleConfirmDate}
+            onCancel={hideDatePicker}
+            locale="pt_BR"
+            headerTextIOS="Escolha uma data"
+            cancelTextIOS="Cancelar"
+            confirmTextIOS="Confirmar"
+        />
       </ScrollView>
     </View>
   );
