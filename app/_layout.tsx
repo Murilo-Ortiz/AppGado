@@ -12,6 +12,7 @@ export default function RootLayout() {
           headerShown: false, 
         }}
       >
+        <Stack.Screen name="signup" />
         <Stack.Screen name="home" />
         <Stack.Screen name="add-animal" />
         <Stack.Screen name="animal/[id]" />
