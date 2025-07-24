@@ -3,16 +3,17 @@ import { signOut } from 'firebase/auth';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { ActivityIndicator, Appbar, Card, FAB, Paragraph, Searchbar, Title, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Card, FAB, Paragraph, Searchbar, SegmentedButtons, Title, useTheme } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { auth, db } from '../firebaseConfig';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const theme = useTheme(); // Acessa o nosso tema personalizado
+  const theme = useTheme();
   const [allAnimals, setAllAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('Todos'); // Estado para o filtro de tipo
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -28,29 +29,34 @@ export default function HomeScreen() {
       });
       setAllAnimals(animalsData);
       setLoading(false);
-    }, (error) => {
-      console.error("Erro ao buscar animais: ", error);
-      Toast.show({ type: 'error', text1: 'Erro', text2: 'Não foi possível carregar os dados.' });
-      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
+  // Lógica de filtro atualizada para incluir o tipo de animal
   const filteredAnimals = useMemo(() => {
-    if (!searchQuery) return allAnimals;
-    return allAnimals.filter(animal => {
+    // 1. Filtra por tipo
+    const typeFiltered = allAnimals.filter(animal => {
+      if (filterType === 'Todos') return true;
+      return animal.tipo === filterType;
+    });
+
+    // 2. Filtra pelo texto da busca
+    if (!searchQuery) {
+      return typeFiltered;
+    }
+    return typeFiltered.filter(animal => {
       const queryLower = searchQuery.toLowerCase();
       const nomeLower = animal.nome?.toLowerCase() || '';
       const brincoLower = animal.brinco?.toLowerCase() || '';
       return nomeLower.includes(queryLower) || brincoLower.includes(queryLower);
     });
-  }, [allAnimals, searchQuery]);
+  }, [allAnimals, searchQuery, filterType]); // Adiciona filterType às dependências
 
   const handleLogout = () => {
     signOut(auth)
       .then(() => router.replace('/'))
       .catch((error) => {
-        console.error("Erro ao fazer logout: ", error);
         Toast.show({ type: 'error', text1: 'Erro', text2: 'Não foi possível sair.' });
       });
   };
@@ -78,6 +84,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
         <Appbar.Content title="Meu Rebanho" titleStyle={{ fontWeight: 'bold' }} />
+        <Appbar.Action icon="account-circle" onPress={() => router.push('/profile')} />
         <Appbar.Action icon="logout" onPress={handleLogout} />
       </Appbar.Header>
 
@@ -89,11 +96,23 @@ export default function HomeScreen() {
         elevation={2}
       />
 
+      {/* Botões de Filtro */}
+      <SegmentedButtons
+        value={filterType}
+        onValueChange={setFilterType}
+        buttons={[
+          { value: 'Todos', label: 'Todos' },
+          { value: 'Vaca', label: 'Vacas' },
+          { value: 'Bezerro', label: 'Bezerros' },
+        ]}
+        style={styles.filterButtons}
+      />
+
       {filteredAnimals.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: theme.colors.placeholder }]}>Nenhum animal encontrado.</Text>
-          {searchQuery ? 
-            <Text style={styles.emptySubText}>Tente uma busca diferente.</Text> :
+          {searchQuery || filterType !== 'Todos' ? 
+            <Text style={styles.emptySubText}>Tente uma busca ou filtro diferente.</Text> :
             <Text style={styles.emptySubText}>Clique no + para começar.</Text>
           }
         </View>
@@ -121,10 +140,13 @@ const styles = StyleSheet.create({
   searchbar: {
     marginHorizontal: 16,
     marginTop: 8,
-    marginBottom: 8,
     borderRadius: 8,
   },
-  list: { paddingHorizontal: 16, paddingTop: 8 },
+  filterButtons: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  list: { paddingHorizontal: 16, paddingTop: 16 },
   card: { 
     marginBottom: 16,
     borderRadius: 8,

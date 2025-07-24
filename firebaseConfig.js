@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { Auth, getAuth } from "firebase/auth";
-import { Firestore, enablePersistence, getFirestore } from "firebase/firestore";
+import { Firestore, initializeFirestore, persistentLocalCache } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_API_KEY,
@@ -23,17 +23,9 @@ if (!getApps().length) {
   app = getApp();
 }
 
-const db: Firestore = getFirestore(app);
-
-enablePersistence(db)
-  .catch((err) => {
-    if (err.code == 'failed-precondition') {
-      console.log('Persistência falhou, múltiplas abas abertas.');
-    } else if (err.code == 'unimplemented') {
-      console.log('Persistência não suportada neste ambiente.');
-    }
-  });
+const db: Firestore = initializeFirestore(app, {
+  localCache: persistentLocalCache({})
+});
 
 const auth: Auth = getAuth(app);
-
 export { auth, db };

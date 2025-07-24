@@ -206,7 +206,8 @@ export default function EditAnimalScreen() {
           </View>
         </RadioButton.Group>
 
-        {tipo === 'Vaca' && (
+        {/* CORREÇÃO APLICADA AQUI */}
+        {tipo === 'Vaca' && sexo === 'Fêmea' && (
           <>
             <Title style={styles.title}>Dados de Vaca</Title>
             <TextInput label="Nº de Partos" value={numPartos} onChangeText={setNumPartos} style={styles.input} mode="outlined" keyboardType="numeric" />
