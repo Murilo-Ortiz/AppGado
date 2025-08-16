@@ -1,10 +1,10 @@
-import { useRouter } from 'expo-router';
-import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { Button, Paragraph, TextInput, Title, useTheme } from 'react-native-paper';
-import Toast from 'react-native-toast-message';
+import { StyleSheet, View, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { TextInput, Button, Title, Paragraph, useTheme } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { auth } from '../firebaseConfig';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import Toast from 'react-native-toast-message';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -13,12 +13,12 @@ export default function LoginScreen() {
   const router = useRouter();
   const theme = useTheme();
 
-  const showToast = (type, text1, text2) => {
+  const showToast = (type, text1, text2 = '') => {
     Toast.show({ type, text1, text2, position: 'bottom' });
   };
 
   const handleLogin = () => {
-    if (email === '' || password === '') {
+    if (email.trim() === '' || password.trim() === '') {
       showToast('error', 'Erro', 'Por favor, preencha e-mail e senha.');
       return;
     }
@@ -45,7 +45,7 @@ export default function LoginScreen() {
           resizeMode="contain"
         />
         <Title style={[styles.title, { color: theme.colors.text }]}>Bem-vindo!</Title>
-        <Paragraph style={[styles.paragraph, { color: theme.colors.placeholder }]}>Acesse para gerenciar seu rebanho.</Paragraph>
+        <Paragraph style={[styles.paragraph, { color: theme.colors.placeholder }]}>Acesse para gerir o seu rebanho.</Paragraph>
 
         <TextInput
           label="Email"
@@ -81,7 +81,17 @@ export default function LoginScreen() {
 
         <Button 
           mode="text" 
-          onPress={() => router.push('/signup')} // Navega para a nova tela de cadastro
+          onPress={() => router.push('/forgot-password')}
+          textColor={theme.colors.placeholder}
+          style={{ marginTop: 8 }}
+          disabled={isLoading}
+        >
+          Esqueceu a senha?
+        </Button>
+
+        <Button 
+          mode="text" 
+          onPress={() => router.push('/signup')}
           textColor={theme.colors.primary}
           disabled={isLoading}
         >

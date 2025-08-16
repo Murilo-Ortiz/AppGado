@@ -1,12 +1,12 @@
-import { Picker } from '@react-native-picker/picker';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import { Appbar, TextInput, Button, RadioButton, Title, TouchableRipple, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { addDoc, collection, getDocs, query } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { db, auth } from '../firebaseConfig';
+import { collection, addDoc, query, getDocs } from 'firebase/firestore';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { Appbar, Button, RadioButton, TextInput, Title, TouchableRipple, useTheme } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
-import { auth, db } from '../firebaseConfig';
+import { Picker } from '@react-native-picker/picker';
 
 const DateInput = ({ label, value, onShowPicker }) => (
   <TouchableRipple onPress={onShowPicker}>
@@ -90,8 +90,13 @@ export default function AddAnimalScreen() {
   };
 
   const validateFields = () => {
+    const brincoRegex = /^\d{5}$/; // Regex para exatamente 5 dígitos numéricos
     if (!brinco.trim() || !nome.trim()) {
       showToast('error', 'Campos Obrigatórios', 'Brinco e Nome devem ser preenchidos.');
+      return false;
+    }
+    if (!brincoRegex.test(brinco.trim())) {
+      showToast('error', 'Dado Inválido', 'O Nº do brinco deve conter exatamente 5 dígitos.');
       return false;
     }
     if (tipo === 'Vaca' && numPartos && isNaN(Number(numPartos))) {
@@ -120,7 +125,7 @@ export default function AddAnimalScreen() {
       brinco: brinco.trim(),
       nome: nome.trim(),
       tipo, raca, sexo, dataNascimento,
-      historicoDoencas: [], vacinas: [], vermifugacao: [], createdAt: new Date(),
+      historicoDoencas: [], vacinas: [], vermifugacao: [], pesosMensais: [], createdAt: new Date(),
     };
 
     if (tipo === 'Vaca') {
@@ -133,7 +138,7 @@ export default function AddAnimalScreen() {
     } else { // Bezerro
       animalData = {
         ...animalData,
-        pesoNascimento, dataDesmame, pesosMensais: [],
+        pesoNascimento, dataDesmame,
         dataPrimeiroCio, dataInseminacaoBezerra,
         idMae, idTouroPai,
       };
@@ -172,7 +177,7 @@ export default function AddAnimalScreen() {
         </RadioButton.Group>
 
         <Title style={styles.title}>Dados de Identificação</Title>
-        <TextInput label="Nº do Brinco *" value={brinco} onChangeText={setBrinco} style={styles.input} mode="outlined" />
+        <TextInput label="Nº do Brinco *" value={brinco} onChangeText={setBrinco} style={styles.input} mode="outlined" keyboardType="numeric" maxLength={5} />
         <TextInput label="Nome do Animal *" value={nome} onChangeText={setNome} style={styles.input} mode="outlined" />
         <TextInput label="Raça" value={raca} onChangeText={setRaca} style={styles.input} mode="outlined" />
         <DateInput label="Data de Nascimento" value={dataNascimento} onShowPicker={() => showDatePicker('nascimento')} />
@@ -184,7 +189,6 @@ export default function AddAnimalScreen() {
           </View>
         </RadioButton.Group>
 
-        {/* CORREÇÃO APLICADA AQUI */}
         {tipo === 'Vaca' && sexo === 'Fêmea' && (
           <>
             <Title style={styles.title}>Dados de Vaca</Title>
@@ -239,7 +243,7 @@ export default function AddAnimalScreen() {
             mode="date"
             onConfirm={handleConfirmDate}
             onCancel={hideDatePicker}
-            locale="pt_BR"
+            locale="pt-BR"
         />
       </ScrollView>
     </View>

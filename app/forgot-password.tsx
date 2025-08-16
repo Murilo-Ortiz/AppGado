@@ -1,62 +1,57 @@
-import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Paragraph, TextInput, Title, useTheme } from 'react-native-paper';
-import Toast from 'react-native-toast-message';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Appbar, TextInput, Button, Title, Paragraph, useTheme } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { auth } from '../firebaseConfig';
+import { sendPasswordResetEmail } from "firebase/auth";
+import Toast from 'react-native-toast-message';
 
-export default function SignUpScreen() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
   const theme = useTheme();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const showToast = (type, text1, text2 = '') => {
     Toast.show({ type, text1, text2, position: 'bottom' });
   };
 
-  const handleSignUp = () => {
-    if (email === '' || password === '') {
-      showToast('error', 'Erro', 'Preencha e-mail e senha para se cadastrar.');
+  const handleSendResetEmail = () => {
+    if (email.trim() === '') {
+      showToast('error', 'Erro', 'Por favor, insira o seu e-mail.');
       return;
     }
     setIsLoading(true);
-    createUserWithEmailAndPassword(auth, email, password)
+    sendPasswordResetEmail(auth, email)
       .then(() => {
-        showToast('success', 'Sucesso!', 'Sua conta foi criada. Você será logado automaticamente.');
-        router.replace('/home');
+        showToast('success', 'E-mail Enviado', 'Verifique a sua caixa de entrada para redefinir a senha.');
+        router.back();
       })
       .catch((error) => {
-        if (error.code === 'auth/email-already-in-use') {
-          showToast('error', 'Erro de Cadastro', 'Este e-mail já está em uso.');
-        } else {
-          showToast('error', 'Erro de Cadastro', 'Não foi possível criar a conta.');
-        }
+        console.error(error);
+        showToast('error', 'Erro', 'Não foi possível enviar o e-mail. Verifique se o e-mail está correto.');
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title="Criar Nova Conta" titleStyle={{ fontWeight: 'bold' }} />
+        <Appbar.Content title="Recuperar Senha" titleStyle={{ fontWeight: 'bold' }} />
       </Appbar.Header>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={[styles.innerContainer, { backgroundColor: theme.colors.surface }]}>
-            <Image 
-              source={{ uri: 'https://placehold.co/150x150/2d6a4f/ffffff?text=AppGado' }}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Title style={[styles.title, { color: theme.colors.text }]}>Crie sua conta</Title>
-            <Paragraph style={[styles.paragraph, { color: theme.colors.placeholder }]}>Insira seus dados para começar.</Paragraph>
+            <Title style={[styles.title, { color: theme.colors.text }]}>Esqueceu a sua senha?</Title>
+            <Paragraph style={[styles.paragraph, { color: theme.colors.placeholder }]}>
+              Insira o seu e-mail abaixo para receber um link de redefinição de senha.
+            </Paragraph>
 
             <TextInput
               label="Email"
@@ -69,25 +64,15 @@ export default function SignUpScreen() {
               disabled={isLoading}
             />
 
-            <TextInput
-              label="Senha"
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-              mode="outlined"
-              secureTextEntry
-              disabled={isLoading}
-            />
-
-            <Button 
-              mode="contained" 
-              onPress={handleSignUp} 
+            <Button
+              mode="contained"
+              onPress={handleSendResetEmail}
               style={styles.button}
               labelStyle={styles.buttonLabel}
               loading={isLoading}
               disabled={isLoading}
             >
-              Cadastrar
+              Enviar E-mail de Recuperação
             </Button>
           </View>
         </ScrollView>
@@ -113,12 +98,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 24,
-    borderRadius: 20,
   },
   title: {
     fontSize: 26,

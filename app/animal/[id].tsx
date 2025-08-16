@@ -140,29 +140,26 @@ export default function AnimalDetailScreen() {
           </Card.Content>
         </Card>
 
-        {/* Seção de Pesos Mensais (Apenas para Bezerros) */}
-        {animal.tipo === 'Bezerro' && (
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title style={styles.sectionTitle}>Histórico de Pesagem</Title>
-              {animal.pesosMensais && animal.pesosMensais.length > 0 ? (
-                animal.pesosMensais.map((peso) => (
-                  <List.Item
-                    key={peso.id}
-                    title={`${peso.peso} kg`}
-                    description={`Data: ${peso.data}`}
-                    left={props => <List.Icon {...props} icon="scale-balance" />}
-                  />
-                ))
-              ) : (
-                <Paragraph>Nenhum peso registrado.</Paragraph>
-              )}
-              <Button icon="plus" mode="contained-tonal" onPress={() => router.push(`/animal/add-weight/${id}`)} style={styles.addButton}>
-                Adicionar Pesagem
-              </Button>
-            </Card.Content>
-          </Card>
-        )}
+        <Card style={styles.card}>
+          <Card.Content>
+            <Title style={styles.sectionTitle}>Histórico de Pesagem</Title>
+            {animal.pesosMensais && animal.pesosMensais.length > 0 ? (
+              animal.pesosMensais.map((peso) => (
+                <List.Item
+                  key={peso.id}
+                  title={`${peso.peso} kg`}
+                  description={`Data: ${peso.data}`}
+                  left={props => <List.Icon {...props} icon="scale-balance" />}
+                />
+              ))
+            ) : (
+              <Paragraph>Nenhum peso registrado.</Paragraph>
+            )}
+            <Button icon="plus" mode="contained-tonal" onPress={() => router.push(`/animal/add-weight/${id}`)} style={styles.addButton}>
+              Adicionar Pesagem
+            </Button>
+          </Card.Content>
+        </Card>
 
         {/* Seção de Vacinas */}
         <Card style={styles.card}>
